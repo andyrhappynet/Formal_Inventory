@@ -189,6 +189,37 @@
             color: #1E4A6B;
         }
         
+        .chart-container {
+            min-height: 380px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Chart Empty State */
+        .chart-empty-state {
+            text-align: center;
+            padding: 60px 40px;
+            color: #8A9AAA;
+        }
+        
+        .chart-empty-state i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        
+        .chart-empty-state h4 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #5A6E7A;
+            margin-bottom: 8px;
+        }
+        
+        .chart-empty-state p {
+            font-size: 13px;
+        }
+        
         /* Table Section */
         .table-section {
             background: white;
@@ -320,7 +351,7 @@
             color: #8B3A3A;
         }
         
-        /* Empty State Message */
+        /* Empty State Message for Table */
         .empty-state {
             text-align: center;
             padding: 60px 40px;
@@ -458,13 +489,13 @@
         </div>
     </div>
 
-    <!-- Chart -->
+    <!-- Chart Section with Error Handling -->
     <div class="chart-section">
         <div class="chart-title">
             <i class="fas fa-chart-bar"></i>
             Cost Distribution by Asset Status
         </div>
-        <div id="chart-status" style="width: 100%; height: 380px;"></div>
+        <div id="chart-status" class="chart-container" style="width: 100%; height: 380px;"></div>
     </div>
 
     <!-- Table with Scroll -->
@@ -502,6 +533,57 @@
     };
     let uniqueValues = { assetTag: [], model: [], category: [], status: [], company: [], purchaseDate: [], purchaseCost: [] };
     
+    // Safe chart drawing function with error handling
+    function drawChartSafe(statusMap, totalCost) {
+        const chartContainer = document.getElementById('chart-status');
+        
+        try {
+            if (!statusMap || statusMap.size === 0) {
+                // Show friendly message in chart area
+                chartContainer.innerHTML = `
+                    <div class="chart-empty-state">
+                        <i class="fas fa-chart-simple"></i>
+                        <h4>No data available for chart</h4>
+                        <p>Try adjusting your filters to see cost distribution</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const chartData = [['Status', 'Cost', { role: 'annotation', type: 'string' }]];
+            for (let [statusName, cost] of statusMap) {
+                chartData.push([statusName, cost, `$${cost.toFixed(2)}`]);
+            }
+            
+            const dataTable = google.visualization.arrayToDataTable(chartData);
+            const options = {
+                title: `Total: $${totalCost.toFixed(2)}`,
+                backgroundColor: 'transparent',
+                colors: ['#1E4A6B', '#0F4C3A', '#8B3A3A'],
+                legend: { position: 'top', textStyle: { color: '#4A5C6C', fontSize: 11 } },
+                bar: { groupWidth: '60%' },
+                chartArea: { width: '65%', height: '70%' },
+                annotations: { alwaysOutside: true, textStyle: { fontSize: 10, color: '#1A2C3E' } },
+                vAxis: { title: 'Cost (USD)', format: 'currency', textStyle: { color: '#6B7A8A' }, minValue: 0 },
+                hAxis: { title: 'Status', textStyle: { color: '#6B7A8A' } }
+            };
+            
+            const chart = new google.visualization.BarChart(chartContainer);
+            chart.draw(dataTable, options);
+        } catch (error) {
+            console.error("Chart error:", error);
+            // Show friendly message instead of technical error
+            chartContainer.innerHTML = `
+                <div class="chart-empty-state">
+                    <i class="fas fa-chart-line"></i>
+                    <h4>Unable to display chart</h4>
+                    <p>No valid cost data available for the selected filters</p>
+                    <button class="btn-reset" onclick="document.getElementById('clear-all-filters').click()" style="margin-top: 12px;">Reset Filters</button>
+                </div>
+            `;
+        }
+    }
+    
     async function loadData() {
         showLoadingState();
         try {
@@ -517,7 +599,10 @@
     
     function showLoadingState() {
         const tbody = document.getElementById('table-body');
-        tbody.innerHTML = `<tr class="loading"><td colspan="7"><i class="fas fa-spinner fa-pulse"></i> Loading inventory data...</td></tr>`;
+        tbody.innerHTML = `<tr class="loading"><td colspan="7"><i class="fas fa-spinner fa-pulse"></i> Loading inventory data...<\/td><\/tr>`;
+        
+        const chartContainer = document.getElementById('chart-status');
+        chartContainer.innerHTML = `<div class="chart-empty-state"><i class="fas fa-spinner fa-pulse"></i><h4>Loading chart data...</h4><\/div>`;
     }
     
     function showErrorState(errorMsg) {
@@ -529,8 +614,17 @@
                     <h4>Unable to Load Data</h4>
                     <p>${errorMsg}</p>
                     <button class="btn-reset" onclick="location.reload()">Try Again</button>
-                </td>
-            </tr>
+                <\/td>
+            <\/tr>
+        `;
+        
+        const chartContainer = document.getElementById('chart-status');
+        chartContainer.innerHTML = `
+            <div class="chart-empty-state">
+                <i class="fas fa-database"></i>
+                <h4>Data connection issue</h4>
+                <p>Please check your internet connection and try again</p>
+            </div>
         `;
     }
     
@@ -559,8 +653,8 @@
                     <h4>${message}</h4>
                     <p>${suggestion}</p>
                     <button class="btn-reset" id="reset-empty-filters">Clear All Filters</button>
-                </td>
-            </tr>
+                 <\/td>
+            <\/tr>
         `;
         
         const resetBtn = document.getElementById('reset-empty-filters');
@@ -570,6 +664,16 @@
                 refreshDisplay();
             };
         }
+        
+        // Also update chart to show empty state
+        const chartContainer = document.getElementById('chart-status');
+        chartContainer.innerHTML = `
+            <div class="chart-empty-state">
+                <i class="fas fa-chart-simple"></i>
+                <h4>No cost data available</h4>
+                <p>Try adjusting your filters to see cost distribution</p>
+            </div>
+        `;
     }
     
     function getActiveFiltersCount() {
@@ -589,7 +693,6 @@
         });
         currentStatus = 'All';
         
-        // Update status buttons UI
         document.querySelectorAll('#status-filters .filter-btn').forEach(btn => {
             btn.classList.toggle('active', btn.textContent === 'All Statuses');
         });
@@ -777,7 +880,6 @@
         document.getElementById('total-cost-val').innerHTML = `$${totalCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         document.getElementById('total-items-val').innerText = filtered.length;
         
-        // Show empty state if no results
         if (filtered.length === 0) {
             showEmptyState();
         } else {
@@ -795,27 +897,14 @@
             `).join('');
         }
         
-        // Update chart
+        // Build status map for chart
         const statusMap = new Map();
-        filtered.forEach(item => statusMap.set(item.status, (statusMap.get(item.status) || 0) + item.purchaseCost));
-        const chartData = [['Status', 'Cost', { role: 'annotation' }]];
-        for (let [statusName, cost] of statusMap) chartData.push([statusName, cost, `$${cost.toFixed(2)}`]);
+        filtered.forEach(item => {
+            statusMap.set(item.status, (statusMap.get(item.status) || 0) + item.purchaseCost);
+        });
         
-        const dataTable = google.visualization.arrayToDataTable(chartData);
-        const options = {
-            title: `Total: $${totalCost.toFixed(2)}`,
-            backgroundColor: 'transparent',
-            colors: ['#1E4A6B', '#0F4C3A', '#8B3A3A'],
-            legend: { position: 'top', textStyle: { color: '#4A5C6C', fontSize: 11 } },
-            bar: { groupWidth: '60%' },
-            chartArea: { width: '65%', height: '70%' },
-            annotations: { alwaysOutside: true, textStyle: { fontSize: 10, color: '#1A2C3E' } },
-            vAxis: { title: 'Cost (USD)', format: 'currency', textStyle: { color: '#6B7A8A' } },
-            hAxis: { title: 'Status', textStyle: { color: '#6B7A8A' } }
-        };
-        
-        const chart = new google.visualization.BarChart(document.getElementById('chart-status'));
-        chart.draw(dataTable, options);
+        // Draw chart with error handling
+        drawChartSafe(statusMap, totalCost);
     }
     
     document.getElementById('clear-all-filters').onclick = () => {
