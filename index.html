@@ -190,13 +190,16 @@
             color: #1E4A6B;
         }
         
-        /* Table Section */
+        /* Table Section - FIXED HEIGHT WITH SCROLL */
         .table-section {
             background: white;
             border-radius: 20px;
             border: 1px solid #E8ECF0;
             overflow: hidden;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            max-height: 500px;
         }
         
         .table-header-toolbar {
@@ -208,6 +211,7 @@
             align-items: center;
             flex-wrap: wrap;
             gap: 12px;
+            flex-shrink: 0;
         }
         
         .table-title {
@@ -234,14 +238,19 @@
             color: #1A2C3E;
         }
         
+        /* Scrollable table wrapper */
         .table-wrapper {
             overflow-x: auto;
+            overflow-y: auto;
+            flex: 1;
+            min-height: 0;
         }
         
         table {
             width: 100%;
             border-collapse: collapse;
             font-size: 13px;
+            min-width: 1000px;
         }
         
         th {
@@ -254,6 +263,9 @@
             font-size: 12px;
             text-transform: uppercase;
             letter-spacing: 0.3px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
         
         td {
@@ -312,6 +324,34 @@
             color: #8B3A3A;
         }
         
+        /* Loading state */
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: #8A9AAA;
+            font-size: 14px;
+        }
+        
+        /* Scrollbar styling */
+        .table-wrapper::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        .table-wrapper::-webkit-scrollbar-track {
+            background: #F0F2F5;
+            border-radius: 10px;
+        }
+        
+        .table-wrapper::-webkit-scrollbar-thumb {
+            background: #C1C9D2;
+            border-radius: 10px;
+        }
+        
+        .table-wrapper::-webkit-scrollbar-thumb:hover {
+            background: #A0AAB5;
+        }
+        
         /* Footer */
         .dashboard-footer {
             margin-top: 32px;
@@ -330,13 +370,8 @@
             .stat-value {
                 font-size: 24px;
             }
-            th, td {
-                padding: 10px 8px;
-                font-size: 11px;
-            }
-            .filter-select {
-                font-size: 10px;
-                padding: 5px 6px;
+            .table-section {
+                max-height: 400px;
             }
         }
     </style>
@@ -387,7 +422,7 @@
         <div id="chart-status" style="width: 100%; height: 380px;"></div>
     </div>
 
-    <!-- Table -->
+    <!-- Table with Scroll -->
     <div class="table-section">
         <div class="table-header-toolbar">
             <span class="table-title"><i class="fas fa-table-list"></i> Asset Inventory</span>
@@ -399,7 +434,7 @@
             <table id="inventory-table">
                 <thead id="table-header"></thead>
                 <tbody id="table-body">
-                    <tr><td colspan="7" class="loading">Loading data...</td></tr>
+                    <tr><td colspan="7" class="loading"><i class="fas fa-spinner fa-pulse"></i> Loading data...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -423,7 +458,7 @@
     let uniqueValues = { assetTag: [], model: [], category: [], status: [], company: [], purchaseDate: [], purchaseCost: [] };
     
     async function loadData() {
-        document.getElementById('table-body').innerHTML = '<tr><td colspan="7" class="loading">Loading data...</td></tr>';
+        document.getElementById('table-body').innerHTML = '<tr><td colspan="7" class="loading"><i class="fas fa-spinner fa-pulse"></i> Loading data...</td></tr>';
         try {
             const response = await fetch(CSV_URL);
             if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
@@ -431,7 +466,7 @@
             parseCSV(csvText);
             document.getElementById('update-time').innerText = new Date().toLocaleString();
         } catch (error) {
-            document.getElementById('table-body').innerHTML = `<tr><td colspan="7" class="loading">Error: ${error.message}</td></tr>`;
+            document.getElementById('table-body').innerHTML = `<tr><td colspan="7" class="loading"><i class="fas fa-exclamation-triangle"></i> Error: ${error.message}</td></tr>`;
         }
     }
     
@@ -593,7 +628,7 @@
         return '';
     }
     
- function refreshDisplay() {
+    function refreshDisplay() {
         let filtered = inventoryData;
         if (currentStatus !== 'All') filtered = filtered.filter(item => item.status === currentStatus);
         
