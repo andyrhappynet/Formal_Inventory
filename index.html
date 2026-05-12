@@ -23,7 +23,6 @@
             line-height: 1.5;
         }
         
-        /* Dashboard Container */
         .dashboard-container {
             max-width: 1600px;
             margin: 0 auto;
@@ -190,7 +189,7 @@
             color: #1E4A6B;
         }
         
-        /* Table Section - FIXED HEIGHT WITH SCROLL */
+        /* Table Section */
         .table-section {
             background: white;
             border-radius: 20px;
@@ -238,7 +237,6 @@
             color: #1A2C3E;
         }
         
-        /* Scrollable table wrapper */
         .table-wrapper {
             overflow-x: auto;
             overflow-y: auto;
@@ -278,7 +276,6 @@
             background: #FAFBFD;
         }
         
-        /* Dropdown Filters in Header */
         .filter-select {
             width: 100%;
             padding: 8px 10px;
@@ -299,7 +296,6 @@
             box-shadow: 0 0 0 3px rgba(30,74,107,0.1);
         }
         
-        /* Badges */
         .badge {
             padding: 4px 10px;
             border-radius: 30px;
@@ -324,7 +320,47 @@
             color: #8B3A3A;
         }
         
-        /* Loading state */
+        /* Empty State Message */
+        .empty-state {
+            text-align: center;
+            padding: 60px 40px;
+            color: #8A9AAA;
+        }
+        
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        
+        .empty-state h4 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #5A6E7A;
+            margin-bottom: 8px;
+        }
+        
+        .empty-state p {
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+        
+        .empty-state .btn-reset {
+            background: #1E4A6B;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .empty-state .btn-reset:hover {
+            background: #0F3A55;
+        }
+        
         .loading {
             text-align: center;
             padding: 60px;
@@ -332,7 +368,18 @@
             font-size: 14px;
         }
         
-        /* Scrollbar styling */
+        .error-state {
+            text-align: center;
+            padding: 60px 40px;
+            color: #8B3A3A;
+        }
+        
+        .error-state i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.6;
+        }
+        
         .table-wrapper::-webkit-scrollbar {
             width: 8px;
             height: 8px;
@@ -352,7 +399,6 @@
             background: #A0AAB5;
         }
         
-        /* Footer */
         .dashboard-footer {
             margin-top: 32px;
             text-align: center;
@@ -362,7 +408,6 @@
             border-top: 1px solid #E8ECF0;
         }
         
-        /* Responsive */
         @media (max-width: 768px) {
             .dashboard-container {
                 padding: 16px;
@@ -409,7 +454,7 @@
     <div class="filter-section">
         <span class="filter-label"><i class="fas fa-filter"></i> Filter by Status</span>
         <div class="filter-buttons" id="status-filters">
-            <button class="filter-btn active" data-status="All">All</button>
+            <button class="filter-btn active" data-status="All">All Statuses</button>
         </div>
     </div>
 
@@ -434,7 +479,7 @@
             <table id="inventory-table">
                 <thead id="table-header"></thead>
                 <tbody id="table-body">
-                    <tr><td colspan="7" class="loading"><i class="fas fa-spinner fa-pulse"></i> Loading data...</td></tr>
+                    <tr class="loading"><td colspan="7"><i class="fas fa-spinner fa-pulse"></i> Loading inventory data...<\/td><\/tr>
                 </tbody>
             </table>
         </div>
@@ -458,7 +503,7 @@
     let uniqueValues = { assetTag: [], model: [], category: [], status: [], company: [], purchaseDate: [], purchaseCost: [] };
     
     async function loadData() {
-        document.getElementById('table-body').innerHTML = '<tr><td colspan="7" class="loading"><i class="fas fa-spinner fa-pulse"></i> Loading data...</td></tr>';
+        showLoadingState();
         try {
             const response = await fetch(CSV_URL);
             if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
@@ -466,8 +511,88 @@
             parseCSV(csvText);
             document.getElementById('update-time').innerText = new Date().toLocaleString();
         } catch (error) {
-            document.getElementById('table-body').innerHTML = `<tr><td colspan="7" class="loading"><i class="fas fa-exclamation-triangle"></i> Error: ${error.message}</td></tr>`;
+            showErrorState(error.message);
         }
+    }
+    
+    function showLoadingState() {
+        const tbody = document.getElementById('table-body');
+        tbody.innerHTML = `<tr class="loading"><td colspan="7"><i class="fas fa-spinner fa-pulse"></i> Loading inventory data...</td></tr>`;
+    }
+    
+    function showErrorState(errorMsg) {
+        const tbody = document.getElementById('table-body');
+        tbody.innerHTML = `
+            <tr class="error-state">
+                <td colspan="7">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h4>Unable to Load Data</h4>
+                    <p>${errorMsg}</p>
+                    <button class="btn-reset" onclick="location.reload()">Try Again</button>
+                </td>
+            </tr>
+        `;
+    }
+    
+    function showEmptyState() {
+        const tbody = document.getElementById('table-body');
+        const activeFilters = getActiveFiltersCount();
+        
+        let message = '';
+        let suggestion = '';
+        
+        if (activeFilters > 0) {
+            message = 'No items match your current filter criteria';
+            suggestion = 'Try clearing one or more filters to see more results.';
+        } else if (currentStatus !== 'All') {
+            message = `No assets found with status "${currentStatus}"`;
+            suggestion = 'Try selecting a different status filter.';
+        } else {
+            message = 'No inventory data available';
+            suggestion = 'Please check your data source.';
+        }
+        
+        tbody.innerHTML = `
+            <tr class="empty-state">
+                <td colspan="7">
+                    <i class="fas fa-search"></i>
+                    <h4>${message}</h4>
+                    <p>${suggestion}</p>
+                    <button class="btn-reset" id="reset-empty-filters">Clear All Filters</button>
+                </td>
+            </tr>
+        `;
+        
+        const resetBtn = document.getElementById('reset-empty-filters');
+        if (resetBtn) {
+            resetBtn.onclick = () => {
+                resetAllFilters();
+                refreshDisplay();
+            };
+        }
+    }
+    
+    function getActiveFiltersCount() {
+        let count = 0;
+        for (let key in columnFilters) {
+            if (columnFilters[key] !== '') count++;
+        }
+        return count;
+    }
+    
+    function resetAllFilters() {
+        for (let key in columnFilters) {
+            columnFilters[key] = '';
+        }
+        document.querySelectorAll('.filter-select').forEach(select => {
+            select.value = '';
+        });
+        currentStatus = 'All';
+        
+        // Update status buttons UI
+        document.querySelectorAll('#status-filters .filter-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.textContent === 'All Statuses');
+        });
     }
     
     function parseCSV(csvText) {
@@ -560,7 +685,7 @@
         statusDiv.innerHTML = '';
         
         const allBtn = document.createElement('button');
-        allBtn.textContent = 'All';
+        allBtn.textContent = 'All Statuses';
         allBtn.className = `filter-btn ${currentStatus === 'All' ? 'active' : ''}`;
         allBtn.onclick = () => { currentStatus = 'All'; refreshDisplay(); };
         statusDiv.appendChild(allBtn);
@@ -644,7 +769,7 @@
         });
         
         document.querySelectorAll('#status-filters .filter-btn').forEach(btn => {
-            const isActive = (currentStatus === 'All' && btn.textContent === 'All') || btn.textContent === currentStatus;
+            const isActive = (currentStatus === 'All' && btn.textContent === 'All Statuses') || btn.textContent === currentStatus;
             btn.classList.toggle('active', isActive);
         });
         
@@ -652,10 +777,11 @@
         document.getElementById('total-cost-val').innerHTML = `$${totalCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         document.getElementById('total-items-val').innerText = filtered.length;
         
-        const tbody = document.getElementById('table-body');
+        // Show empty state if no results
         if (filtered.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">No assets match the selected filters</td></tr>';
+            showEmptyState();
         } else {
+            const tbody = document.getElementById('table-body');
             tbody.innerHTML = filtered.map(item => `
                 <tr>
                     <td>${escapeHtml(item.assetTag)}</td>
@@ -669,6 +795,7 @@
             `).join('');
         }
         
+        // Update chart
         const statusMap = new Map();
         filtered.forEach(item => statusMap.set(item.status, (statusMap.get(item.status) || 0) + item.purchaseCost));
         const chartData = [['Status', 'Cost', { role: 'annotation' }]];
@@ -692,8 +819,7 @@
     }
     
     document.getElementById('clear-all-filters').onclick = () => {
-        for (let key in columnFilters) columnFilters[key] = '';
-        document.querySelectorAll('.filter-select').forEach(select => select.value = '');
+        resetAllFilters();
         refreshDisplay();
     };
     
