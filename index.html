@@ -315,7 +315,7 @@
             box-shadow: 0 0 0 3px rgba(30,74,107,0.1);
         }
         
-        /* Badge styles - Soft colors */
+        /* Badge styles - Soft colors matching chart */
         .badge {
             padding: 4px 10px;
             border-radius: 30px;
@@ -326,18 +326,18 @@
         }
         
         .badge.assigned {
-            background: #E8F0FE;
-            color: #1E4A6B;
+            background: #DBEAFE;
+            color: #1E40AF;
         }
         
         .badge.instock {
-            background: #E6F4EA;
-            color: #0F4C3A;
+            background: #D1FAE5;
+            color: #065F46;
         }
         
         .badge.broken {
-            background: #FEF2E8;
-            color: #C2410C;
+            background: #FEE2E2;
+            color: #991B1B;
         }
         
         .empty-state {
@@ -516,11 +516,11 @@
     };
     let uniqueValues = { assetTag: [], model: [], category: [], status: [], company: [], purchaseDate: [], purchaseCost: [] };
     
-    // Color mapping for chart
+    // Color mapping for chart bars - using distinct, visible colors
     const chartColors = {
         'Assigned': '#3B82F6',
         'In Stock': '#10B981',
-        'Broken/Damaged': '#F97316'
+        'Broken/Damaged': '#EF4444'
     };
     
     function drawChart(statusMap, totalCost) {
@@ -538,32 +538,44 @@
                 return;
             }
             
+            // Clear any previous empty state content
+            chartContainer.innerHTML = '';
+            
             // Build chart data with proper formatting
             const chartData = [];
             chartData.push(['Status', 'Cost (USD)', { role: 'annotation', type: 'string' }]);
             
-            for (let [statusName, cost] of statusMap) {
+            // Sort statuses for consistent display
+            const sortedStatuses = Array.from(statusMap.keys()).sort();
+            for (let statusName of sortedStatuses) {
+                const cost = statusMap.get(statusName);
                 chartData.push([statusName, cost, `$${cost.toFixed(2)}`]);
             }
             
             const dataTable = google.visualization.arrayToDataTable(chartData);
             
-            // Assign colors based on status name
+            // Assign colors based on status name in the same order as data
             let colorArray = [];
-            for (let [statusName] of statusMap) {
-                if (statusName === 'Assigned') colorArray.push('#3B82F6');
-                else if (statusName === 'In Stock') colorArray.push('#10B981');
-                else if (statusName === 'Broken/Damaged') colorArray.push('#F97316');
-                else colorArray.push('#6B7280'); // Gray for other statuses
+            for (let [statusName] of dataTable) {
+                if (statusName !== 'Status') {
+                    if (statusName === 'Assigned') colorArray.push('#3B82F6');
+                    else if (statusName === 'In Stock') colorArray.push('#10B981');
+                    else if (statusName === 'Broken/Damaged') colorArray.push('#EF4444');
+                    else colorArray.push('#6B7280');
+                }
             }
             
             const options = {
-                title: `Total: $${totalCost.toFixed(2)}`,
+                title: `Total Cost: $${totalCost.toFixed(2)}`,
                 backgroundColor: 'transparent',
                 colors: colorArray,
-                legend: { position: 'top', textStyle: { color: '#4A5C6C', fontSize: 11 } },
-                bar: { groupWidth: '50%' },
-                chartArea: { width: '65%', height: '70%', left: '10%', top: '15%' },
+                legend: { 
+                    position: 'top', 
+                    alignment: 'center',
+                    textStyle: { color: '#4A5C6C', fontSize: 12, fontName: 'Inter' }
+                },
+                bar: { groupWidth: '60%' },
+                chartArea: { width: '70%', height: '65%', left: '12%', top: '12%' },
                 annotations: { 
                     alwaysOutside: true, 
                     textStyle: { fontSize: 11, color: '#1A2C3E', bold: true },
@@ -572,20 +584,31 @@
                 vAxis: { 
                     title: 'Cost (USD)', 
                     format: 'currency', 
-                    textStyle: { color: '#6B7A8A' }, 
+                    textStyle: { color: '#6B7A8A', fontSize: 11 },
                     minValue: 0,
-                    viewWindow: { min: 0 }
+                    viewWindow: { min: 0 },
+                    gridlines: { color: '#E8ECF0', count: 5 }
                 },
                 hAxis: { 
                     title: 'Status', 
-                    textStyle: { color: '#6B7A8A' },
-                    slantedText: false
+                    textStyle: { color: '#6B7A8A', fontSize: 12, bold: true },
+                    slantedText: false,
+                    gridlines: { color: 'transparent' }
                 },
-                tooltip: { isHtml: false, trigger: 'focus' }
+                tooltip: { 
+                    isHtml: false, 
+                    trigger: 'focus',
+                    textStyle: { fontSize: 12 }
+                }
             };
             
             const chart = new google.visualization.BarChart(chartContainer);
             chart.draw(dataTable, options);
+            
+            // Force a redraw after a short delay to ensure rendering
+            setTimeout(() => {
+                chart.draw(dataTable, options);
+            }, 100);
             
         } catch (error) {
             console.error("Chart error:", error);
@@ -912,9 +935,11 @@
             `).join('');
         }
         
+        // Build status map for chart (sum costs by status)
         const statusMap = new Map();
         filtered.forEach(item => {
-            statusMap.set(item.status, (statusMap.get(item.status) || 0) + item.purchaseCost);
+            const currentSum = statusMap.get(item.status) || 0;
+            statusMap.set(item.status, currentSum + item.purchaseCost);
         });
         
         drawChart(statusMap, totalCost);
@@ -924,10 +949,3 @@
         resetAllFilters();
         refreshDisplay();
     };
-    
-    function escapeHtml(str) { return str?.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m])) || ''; }
-    
-    loadData();
-</script>
-</body>
-</html>
