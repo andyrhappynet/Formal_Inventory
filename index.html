@@ -5,9 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IT Asset Management Dashboard</title>
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-    <!-- Professional Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
-    <!-- Font Awesome Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -65,7 +63,7 @@
             background: white;
             border-radius: 20px;
             padding: 24px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
             transition: all 0.2s ease;
             border: 1px solid #E8ECF0;
         }
@@ -119,7 +117,6 @@
             padding: 20px 24px;
             margin-bottom: 32px;
             border: 1px solid #E8ECF0;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
         }
         
         .filter-label {
@@ -168,7 +165,6 @@
             padding: 20px 24px;
             margin-bottom: 32px;
             border: 1px solid #E8ECF0;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
         
         .chart-title {
@@ -190,31 +186,11 @@
             width: 100%;
         }
         
-        .chart-empty-state {
-            text-align: center;
-            padding: 60px 40px;
-            color: #8A9AAA;
-        }
-        
-        .chart-empty-state i {
-            font-size: 48px;
-            margin-bottom: 16px;
-            opacity: 0.5;
-        }
-        
-        .chart-empty-state h4 {
-            font-size: 16px;
-            font-weight: 600;
-            color: #5A6E7A;
-            margin-bottom: 8px;
-        }
-        
         .table-section {
             background: white;
             border-radius: 20px;
             border: 1px solid #E8ECF0;
             overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
             display: flex;
             flex-direction: column;
             max-height: 500px;
@@ -306,7 +282,6 @@
             cursor: pointer;
             margin-top: 10px;
             color: #2C3E50;
-            transition: all 0.2s ease;
         }
         
         .filter-select:focus {
@@ -315,14 +290,12 @@
             box-shadow: 0 0 0 3px rgba(30,74,107,0.1);
         }
         
-        /* Badge styles - Soft colors matching chart */
         .badge {
             padding: 4px 10px;
             border-radius: 30px;
             font-size: 11px;
             font-weight: 600;
             display: inline-block;
-            letter-spacing: 0.3px;
         }
         
         .badge.assigned {
@@ -340,31 +313,31 @@
             color: #991B1B;
         }
         
-        .empty-state {
+        .empty-state, .loading, .error-state {
             text-align: center;
             padding: 60px 40px;
             color: #8A9AAA;
         }
         
-        .empty-state i {
+        .empty-state i, .loading i, .error-state i {
             font-size: 48px;
             margin-bottom: 16px;
             opacity: 0.5;
         }
         
-        .empty-state h4 {
+        .empty-state h4, .loading h4, .error-state h4 {
             font-size: 18px;
             font-weight: 600;
             color: #5A6E7A;
             margin-bottom: 8px;
         }
         
-        .empty-state p {
+        .empty-state p, .loading p, .error-state p {
             font-size: 13px;
             margin-bottom: 20px;
         }
         
-        .empty-state .btn-reset {
+        .btn-reset {
             background: #1E4A6B;
             color: white;
             border: none;
@@ -373,29 +346,18 @@
             font-size: 13px;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s ease;
         }
         
-        .empty-state .btn-reset:hover {
+        .btn-reset:hover {
             background: #0F3A55;
         }
         
-        .loading {
-            text-align: center;
-            padding: 60px;
-            color: #8A9AAA;
-            font-size: 14px;
-        }
-        
         .error-state {
-            text-align: center;
-            padding: 60px 40px;
-            color: #8B3A3A;
+            color: #991B1B;
         }
         
         .error-state i {
-            font-size: 48px;
-            margin-bottom: 16px;
+            color: #991B1B;
             opacity: 0.6;
         }
         
@@ -412,10 +374,6 @@
         .table-wrapper::-webkit-scrollbar-thumb {
             background: #C1C9D2;
             border-radius: 10px;
-        }
-        
-        .table-wrapper::-webkit-scrollbar-thumb:hover {
-            background: #A0AAB5;
         }
         
         .dashboard-footer {
@@ -493,7 +451,7 @@
             <table id="inventory-table">
                 <thead id="table-header"></thead>
                 <tbody id="table-body">
-                    <tr class="loading"><td colspan="7"><i class="fas fa-spinner fa-pulse"></i> Loading inventory data...<\/td><\/tr>
+                    <tr class="loading"><td colspan="7"><i class="fas fa-spinner fa-pulse"></i> Loading inventory data...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -516,113 +474,6 @@
     };
     let uniqueValues = { assetTag: [], model: [], category: [], status: [], company: [], purchaseDate: [], purchaseCost: [] };
     
-    // Color mapping for chart bars - using distinct, visible colors
-    const chartColors = {
-        'Assigned': '#3B82F6',
-        'In Stock': '#10B981',
-        'Broken/Damaged': '#EF4444'
-    };
-    
-    function drawChart(statusMap, totalCost) {
-        const chartContainer = document.getElementById('chart-status');
-        
-        try {
-            if (!statusMap || statusMap.size === 0) {
-                chartContainer.innerHTML = `
-                    <div class="chart-empty-state" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
-                        <i class="fas fa-chart-simple"></i>
-                        <h4>No data available for chart</h4>
-                        <p>Try adjusting your filters to see cost distribution</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            // Clear any previous empty state content
-            chartContainer.innerHTML = '';
-            
-            // Build chart data with proper formatting
-            const chartData = [];
-            chartData.push(['Status', 'Cost (USD)', { role: 'annotation', type: 'string' }]);
-            
-            // Sort statuses for consistent display
-            const sortedStatuses = Array.from(statusMap.keys()).sort();
-            for (let statusName of sortedStatuses) {
-                const cost = statusMap.get(statusName);
-                chartData.push([statusName, cost, `$${cost.toFixed(2)}`]);
-            }
-            
-            const dataTable = google.visualization.arrayToDataTable(chartData);
-            
-            // Assign colors based on status name in the same order as data
-            let colorArray = [];
-            for (let [statusName] of dataTable) {
-                if (statusName !== 'Status') {
-                    if (statusName === 'Assigned') colorArray.push('#3B82F6');
-                    else if (statusName === 'In Stock') colorArray.push('#10B981');
-                    else if (statusName === 'Broken/Damaged') colorArray.push('#EF4444');
-                    else colorArray.push('#6B7280');
-                }
-            }
-            
-            const options = {
-                title: `Total Cost: $${totalCost.toFixed(2)}`,
-                backgroundColor: 'transparent',
-                colors: colorArray,
-                legend: { 
-                    position: 'top', 
-                    alignment: 'center',
-                    textStyle: { color: '#4A5C6C', fontSize: 12, fontName: 'Inter' }
-                },
-                bar: { groupWidth: '60%' },
-                chartArea: { width: '70%', height: '65%', left: '12%', top: '12%' },
-                annotations: { 
-                    alwaysOutside: true, 
-                    textStyle: { fontSize: 11, color: '#1A2C3E', bold: true },
-                    stem: { color: 'transparent' }
-                },
-                vAxis: { 
-                    title: 'Cost (USD)', 
-                    format: 'currency', 
-                    textStyle: { color: '#6B7A8A', fontSize: 11 },
-                    minValue: 0,
-                    viewWindow: { min: 0 },
-                    gridlines: { color: '#E8ECF0', count: 5 }
-                },
-                hAxis: { 
-                    title: 'Status', 
-                    textStyle: { color: '#6B7A8A', fontSize: 12, bold: true },
-                    slantedText: false,
-                    gridlines: { color: 'transparent' }
-                },
-                tooltip: { 
-                    isHtml: false, 
-                    trigger: 'focus',
-                    textStyle: { fontSize: 12 }
-                }
-            };
-            
-            const chart = new google.visualization.BarChart(chartContainer);
-            chart.draw(dataTable, options);
-            
-            // Force a redraw after a short delay to ensure rendering
-            setTimeout(() => {
-                chart.draw(dataTable, options);
-            }, 100);
-            
-        } catch (error) {
-            console.error("Chart error:", error);
-            chartContainer.innerHTML = `
-                <div class="chart-empty-state" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
-                    <i class="fas fa-chart-line"></i>
-                    <h4>Unable to display chart</h4>
-                    <p>No valid cost data available for the selected filters</p>
-                    <button class="btn-reset" onclick="document.getElementById('clear-all-filters').click()" style="margin-top: 12px;">Reset Filters</button>
-                </div>
-            `;
-        }
-    }
-    
     async function loadData() {
         showLoadingState();
         try {
@@ -638,88 +489,37 @@
     
     function showLoadingState() {
         const tbody = document.getElementById('table-body');
-        tbody.innerHTML = `<tr class="loading"><td colspan="7"><i class="fas fa-spinner fa-pulse"></i> Loading inventory data...<\/td><\/tr>`;
-        
-        const chartContainer = document.getElementById('chart-status');
-        chartContainer.innerHTML = `<div class="chart-empty-state" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;"><i class="fas fa-spinner fa-pulse"></i><h4>Loading chart data...</h4><\/div>`;
+        tbody.innerHTML = '<tr class="loading"><td colspan="7"><i class="fas fa-spinner fa-pulse"></i> Loading inventory data...</td></tr>';
+        const chartDiv = document.getElementById('chart-status');
+        chartDiv.innerHTML = '<div class="loading" style="height: 380px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-spinner fa-pulse"></i> Loading chart data...</div>';
     }
     
     function showErrorState(errorMsg) {
         const tbody = document.getElementById('table-body');
-        tbody.innerHTML = `
-            <tr class="error-state">
-                <td colspan="7">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <h4>Unable to Load Data</h4>
-                    <p>${errorMsg}</p>
-                    <button class="btn-reset" onclick="location.reload()">Try Again</button>
-                <\/td>
-            <\/tr>
-        `;
-        
-        const chartContainer = document.getElementById('chart-status');
-        chartContainer.innerHTML = `
-            <div class="chart-empty-state" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
-                <i class="fas fa-database"></i>
-                <h4>Data connection issue</h4>
-                <p>Please check your internet connection and try again</p>
-            </div>
-        `;
+        tbody.innerHTML = '<tr class="error-state"><td colspan="7"><i class="fas fa-exclamation-triangle"></i><h4>Unable to Load Data</h4><p>' + errorMsg + '</p><button class="btn-reset" onclick="location.reload()">Try Again</button></td></tr>';
+        const chartDiv = document.getElementById('chart-status');
+        chartDiv.innerHTML = '<div class="error-state" style="height: 380px; display: flex; flex-direction: column; align-items: center; justify-content: center;"><i class="fas fa-database"></i><h4>Data connection issue</h4><p>Please check your internet connection and try again</p></div>';
     }
     
     function showEmptyState() {
         const tbody = document.getElementById('table-body');
-        const activeFilters = getActiveFiltersCount();
+        let message = 'No items match your current filter criteria';
+        let suggestion = 'Try clearing one or more filters to see more results.';
         
-        let message = '';
-        let suggestion = '';
-        
-        if (activeFilters > 0) {
-            message = 'No items match your current filter criteria';
-            suggestion = 'Try clearing one or more filters to see more results.';
-        } else if (currentStatus !== 'All') {
-            message = `No assets found with status "${currentStatus}"`;
+        if (currentStatus !== 'All') {
+            message = 'No assets found with status "' + currentStatus + '"';
             suggestion = 'Try selecting a different status filter.';
-        } else {
-            message = 'No inventory data available';
-            suggestion = 'Please check your data source.';
         }
         
-        tbody.innerHTML = `
-            <tr class="empty-state">
-                <td colspan="7">
-                    <i class="fas fa-search"></i>
-                    <h4>${message}</h4>
-                    <p>${suggestion}</p>
-                    <button class="btn-reset" id="reset-empty-filters">Clear All Filters</button>
-                 <\/td>
-            <\/tr>
-        `;
+        tbody.innerHTML = '<tr class="empty-state"><td colspan="7"><i class="fas fa-search"></i><h4>' + message + '</h4><p>' + suggestion + '</p><button class="btn-reset" id="reset-empty-filters">Clear All Filters</button></td></tr>';
         
         const resetBtn = document.getElementById('reset-empty-filters');
         if (resetBtn) {
-            resetBtn.onclick = () => {
-                resetAllFilters();
-                refreshDisplay();
-            };
+            resetBtn.onclick = () => { resetAllFilters(); refreshDisplay(); };
         }
         
-        const chartContainer = document.getElementById('chart-status');
-        chartContainer.innerHTML = `
-            <div class="chart-empty-state" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
-                <i class="fas fa-chart-simple"></i>
-                <h4>No cost data available</h4>
-                <p>Try adjusting your filters to see cost distribution</p>
-            </div>
-        `;
-    }
-    
-    function getActiveFiltersCount() {
-        let count = 0;
-        for (let key in columnFilters) {
-            if (columnFilters[key] !== '') count++;
-        }
-        return count;
+        const chartDiv = document.getElementById('chart-status');
+        chartDiv.innerHTML = '<div class="empty-state" style="height: 380px; display: flex; flex-direction: column; align-items: center; justify-content: center;"><i class="fas fa-chart-simple"></i><h4>No cost data available</h4><p>Try adjusting your filters to see cost distribution</p></div>';
     }
     
     function resetAllFilters() {
@@ -730,10 +530,10 @@
             select.value = '';
         });
         currentStatus = 'All';
-        
         document.querySelectorAll('#status-filters .filter-btn').forEach(btn => {
             btn.classList.toggle('active', btn.textContent === 'All Statuses');
         });
+        refreshDisplay();
     }
     
     function parseCSV(csvText) {
@@ -827,14 +627,14 @@
         
         const allBtn = document.createElement('button');
         allBtn.textContent = 'All Statuses';
-        allBtn.className = `filter-btn ${currentStatus === 'All' ? 'active' : ''}`;
+        allBtn.className = 'filter-btn ' + (currentStatus === 'All' ? 'active' : '');
         allBtn.onclick = () => { currentStatus = 'All'; refreshDisplay(); };
         statusDiv.appendChild(allBtn);
         
         statuses.forEach(s => {
             const btn = document.createElement('button');
             btn.textContent = s;
-            btn.className = `filter-btn ${currentStatus === s ? 'active' : ''}`;
+            btn.className = 'filter-btn ' + (currentStatus === s ? 'active' : '');
             btn.onclick = () => { currentStatus = s; refreshDisplay(); };
             statusDiv.appendChild(btn);
         });
@@ -872,7 +672,8 @@
             col.values.forEach(value => {
                 const option = document.createElement('option');
                 option.value = value;
-                option.textContent = value.length > 30 ? value.substring(0, 27) + '...' : value;
+                let displayValue = value.length > 30 ? value.substring(0, 27) + '...' : value;
+                option.textContent = displayValue;
                 select.appendChild(option);
             });
             
@@ -894,9 +695,60 @@
         return '';
     }
     
+    function drawChart(statusMap, totalCost) {
+        const chartDiv = document.getElementById('chart-status');
+        
+        try {
+            if (!statusMap || statusMap.size === 0) {
+                chartDiv.innerHTML = '<div class="empty-state" style="height: 380px; display: flex; flex-direction: column; align-items: center; justify-content: center;"><i class="fas fa-chart-simple"></i><h4>No data available for chart</h4><p>Try adjusting your filters to see cost distribution</p></div>';
+                return;
+            }
+            
+            chartDiv.innerHTML = '';
+            
+            const chartData = [['Status', 'Cost (USD)', { role: 'annotation', type: 'string' }]];
+            const sortedStatuses = Array.from(statusMap.keys()).sort();
+            for (let statusName of sortedStatuses) {
+                const cost = statusMap.get(statusName);
+                chartData.push([statusName, cost, '$' + cost.toFixed(2)]);
+            }
+            
+            const dataTable = google.visualization.arrayToDataTable(chartData);
+            
+            let colorArray = [];
+            for (let i = 1; i < chartData.length; i++) {
+                const statusName = chartData[i][0];
+                if (statusName === 'Assigned') colorArray.push('#3B82F6');
+                else if (statusName === 'In Stock') colorArray.push('#10B981');
+                else if (statusName === 'Broken/Damaged') colorArray.push('#EF4444');
+                else colorArray.push('#6B7280');
+            }
+            
+            const options = {
+                title: 'Total Cost: $' + totalCost.toFixed(2),
+                backgroundColor: 'transparent',
+                colors: colorArray,
+                legend: { position: 'top', alignment: 'center', textStyle: { color: '#4A5C6C', fontSize: 12 } },
+                bar: { groupWidth: '60%' },
+                chartArea: { width: '70%', height: '65%', left: '12%', top: '12%' },
+                annotations: { alwaysOutside: true, textStyle: { fontSize: 11, color: '#1A2C3E', bold: true }, stem: { color: 'transparent' } },
+                vAxis: { title: 'Cost (USD)', format: 'currency', textStyle: { color: '#6B7A8A', fontSize: 11 }, minValue: 0, viewWindow: { min: 0 }, gridlines: { color: '#E8ECF0', count: 5 } },
+                hAxis: { title: 'Status', textStyle: { color: '#6B7A8A', fontSize: 12, bold: true }, slantedText: false, gridlines: { color: 'transparent' } }
+            };
+            
+            const chart = new google.visualization.BarChart(chartDiv);
+            chart.draw(dataTable, options);
+        } catch (error) {
+            console.error("Chart error:", error);
+            chartDiv.innerHTML = '<div class="error-state" style="height: 380px; display: flex; flex-direction: column; align-items: center; justify-content: center;"><i class="fas fa-chart-line"></i><h4>Unable to display chart</h4><p>No valid cost data available for the selected filters</p><button class="btn-reset" onclick="document.getElementById(\'clear-all-filters\').click()" style="margin-top: 12px;">Reset Filters</button></div>';
+        }
+    }
+    
     function refreshDisplay() {
         let filtered = inventoryData;
-        if (currentStatus !== 'All') filtered = filtered.filter(item => item.status === currentStatus);
+        if (currentStatus !== 'All') {
+            filtered = filtered.filter(item => item.status === currentStatus);
+        }
         
         filtered = filtered.filter(item => {
             if (columnFilters.assetTag && item.assetTag !== columnFilters.assetTag) return false;
@@ -911,41 +763,62 @@
         
         document.querySelectorAll('#status-filters .filter-btn').forEach(btn => {
             const isActive = (currentStatus === 'All' && btn.textContent === 'All Statuses') || btn.textContent === currentStatus;
-            btn.classList.toggle('active', isActive);
+            if (isActive) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
         });
         
-        const totalCost = filtered.reduce((s, i) => s + i.purchaseCost, 0);
-        document.getElementById('total-cost-val').innerHTML = `$${totalCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const totalCost = filtered.reduce((sum, item) => sum + item.purchaseCost, 0);
+        document.getElementById('total-cost-val').innerHTML = '$' + totalCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         document.getElementById('total-items-val').innerText = filtered.length;
         
         if (filtered.length === 0) {
             showEmptyState();
-        } else {
-            const tbody = document.getElementById('table-body');
-            tbody.innerHTML = filtered.map(item => `
-                <tr>
-                    <td>${escapeHtml(item.assetTag)}</td>
-                    <td>${escapeHtml(item.model)}</td>
-                    <td>${escapeHtml(item.category)}</td>
-                    <td><span class="badge ${getBadgeClass(item.status)}">${escapeHtml(item.status)}</span></td>
-                    <td>${escapeHtml(item.company)}</td>
-                    <td>${escapeHtml(item.purchaseDate)}</td>
-                    <td>$${item.purchaseCost.toFixed(2)}</td>
-                </tr>
-            `).join('');
+            const chartDiv = document.getElementById('chart-status');
+            chartDiv.innerHTML = '<div class="empty-state" style="height: 380px; display: flex; flex-direction: column; align-items: center; justify-content: center;"><i class="fas fa-chart-simple"></i><h4>No cost data available</h4><p>Try adjusting your filters to see cost distribution</p></div>';
+            return;
         }
         
-        // Build status map for chart (sum costs by status)
+        const tbody = document.getElementById('table-body');
+        let tableHtml = '';
+        for (let item of filtered) {
+            tableHtml += '<tr>';
+            tableHtml += '<td>' + escapeHtml(item.assetTag) + '</td>';
+            tableHtml += '<td>' + escapeHtml(item.model) + '</td>';
+            tableHtml += '<td>' + escapeHtml(item.category) + '</td>';
+            tableHtml += '<td><span class="badge ' + getBadgeClass(item.status) + '">' + escapeHtml(item.status) + '</span></td>';
+            tableHtml += '<td>' + escapeHtml(item.company) + '</td>';
+            tableHtml += '<td>' + escapeHtml(item.purchaseDate) + '</td>';
+            tableHtml += '<td>$' + item.purchaseCost.toFixed(2) + '</td>';
+            tableHtml += '</tr>';
+        }
+        tbody.innerHTML = tableHtml;
+        
         const statusMap = new Map();
-        filtered.forEach(item => {
+        for (let item of filtered) {
             const currentSum = statusMap.get(item.status) || 0;
             statusMap.set(item.status, currentSum + item.purchaseCost);
-        });
-        
+        }
         drawChart(statusMap, totalCost);
     }
     
-    document.getElementById('clear-all-filters').onclick = () => {
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    document.getElementById('clear-all-filters').onclick = function() {
         resetAllFilters();
-        refreshDisplay();
     };
+    
+    loadData();
+</script>
+</body>
+</html>
