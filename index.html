@@ -315,6 +315,7 @@
             box-shadow: 0 0 0 3px rgba(30,74,107,0.1);
         }
         
+        /* Badge styles - Soft colors */
         .badge {
             padding: 4px 10px;
             border-radius: 30px;
@@ -335,8 +336,8 @@
         }
         
         .badge.broken {
-            background: #FEE8E8;
-            color: #8B3A3A;
+            background: #FEF2E8;
+            color: #C2410C;
         }
         
         .empty-state {
@@ -515,6 +516,13 @@
     };
     let uniqueValues = { assetTag: [], model: [], category: [], status: [], company: [], purchaseDate: [], purchaseCost: [] };
     
+    // Color mapping for chart
+    const chartColors = {
+        'Assigned': '#3B82F6',
+        'In Stock': '#10B981',
+        'Broken/Damaged': '#F97316'
+    };
+    
     function drawChart(statusMap, totalCost) {
         const chartContainer = document.getElementById('chart-status');
         
@@ -540,16 +548,13 @@
             
             const dataTable = google.visualization.arrayToDataTable(chartData);
             
-            // Set explicit bar color based on status
-            let barColors = ['#1E4A6B', '#0F4C3A', '#8B3A3A'];
-            let colorIndex = 0;
+            // Assign colors based on status name
             let colorArray = [];
             for (let [statusName] of statusMap) {
-                if (statusName === 'Assigned') colorArray.push('#1E4A6B');
-                else if (statusName === 'In Stock') colorArray.push('#0F4C3A');
-                else if (statusName === 'Broken/Damaged') colorArray.push('#8B3A3A');
-                else colorArray.push(barColors[colorIndex % barColors.length]);
-                colorIndex++;
+                if (statusName === 'Assigned') colorArray.push('#3B82F6');
+                else if (statusName === 'In Stock') colorArray.push('#10B981');
+                else if (statusName === 'Broken/Damaged') colorArray.push('#F97316');
+                else colorArray.push('#6B7280'); // Gray for other statuses
             }
             
             const options = {
